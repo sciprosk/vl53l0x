@@ -1,3 +1,12 @@
+/*--------------------------------------------------
+  VL53L0X source files
+..................................................*/
+#include "millis.c"
+#include "debugPrint.c"
+#include "i2cmaster.c"
+#include "VL53L0X.c"
+/*..................................................*/
+
 #include <avr/io.h>
 #include <stdio.h>
 #include <util/delay.h>
@@ -8,7 +17,7 @@ void uart_init(uint32_t buad) {
   UBRR0L = (uint8_t)ubrr;
 
   UCSR0B = (1 << TXEN0) | (1 << RXEN0);
-  UCSR0C = (1 << UCSZ01) | (1 <<UCSZ00);
+  UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
 }
 
 void uart_transmit(uint8_t data) {
