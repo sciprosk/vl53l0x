@@ -8,15 +8,18 @@
 ; Memory-mapped registers.
 .equ TWBR, 0x00B8 ; Bit Rate Register
 .equ TWSR, 0x00B9 ; Status Register
+.equ TWDR, 0x00BB ; Data Register
 .equ TWCR, 0x00BC ; Control Register
 
 ; Bit numbers in registers (0-based)
+; TWSR:
 .equ TWSP0, 0
 .equ TWSP1, 1
+; TWCR:
 .equ TWINT, 7
 .equ TWSTA, 5
-.equ TWEN, 2
-
+.equ TWSTO, 4
+.equ TWEN , 2
 
 .text
 .align(1) ; 2^1=16-bit alignment for the flash memory
@@ -43,13 +46,25 @@ i2c_putc:
 	; START condition:
 	ldi r16, (1 << TWINT) | (1 < TWSTA) | (1 << TWEN)
 	sts TWCR, r16
-	; Block forever until done.
-1:
+1:	; Block forever until done.
 	lds r16, TWCR
-	andi r16, (1 << TWINT)
+	andi r16, 1 << TWINT
 	brne 1b
-	; WRITE address
-	; WRITE byte
-	; STOP condition
+	; WRITE address:
+	rol r24
+	sts TWDR, r24
+2:	; Block forever until done.
+	lds r16, TWCR
+	andi r16, 1 << TWINT
+	brne 2b
+	; WRITE byte:
+	sts TWDR, r22
+3:	; Block forever until done.
+	lds r16, TWCR
+	andi r16, 1 << TWINT
+	brne 3b
+	; STOP condition:
+	ldi r16, (1 << TWINT) | (1 << TWSTO) | (1 << TWEN)
+	; No wait after STOP.
 	ret
 	.size i2c_putc, . - i2c_putc
