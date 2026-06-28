@@ -1,5 +1,4 @@
 ; I2C API functions implementation.
-
 ; Basic protocol-related literals.
 .equ F_CPU, 16000000  ; 16 MHz core clock
 .equ I2C_FREQ, 100000 ; 100 kHz standard mode
@@ -29,7 +28,7 @@
 ; void i2c_init(void)
 i2c_init:
 	; Set pre-scaler value to 1
-	ldi r16, (1 << TWSP1) | (1 << TWSP0)
+	ldi r16, 0x0;
 	sts TWSR, r16
 	; Set the bit rate to 100 kHz
 	ldi r16, TWBR_VAL ; must fit in 8 bits
@@ -44,27 +43,32 @@ i2c_init:
 ; AVR ABI: addr -> R24, data -> R22
 i2c_putc:
 	; START condition:
-	ldi r16, (1 << TWINT) | (1 < TWSTA) | (1 << TWEN)
+	ldi r16, (1 << TWINT) | (1 << TWSTA) | (1 << TWEN)
 	sts TWCR, r16
 1:	; Block forever until done.
 	lds r16, TWCR
-	andi r16, 1 << TWINT
-	brne 1b
+	sbrs r16, TWINT
+	rjmp 1b
 	; WRITE address:
-	rol r24
+	lsl r24
 	sts TWDR, r24
+	ldi r16, (1 << TWINT) | (1 << TWEN)
+	sts TWCR, r16
 2:	; Block forever until done.
 	lds r16, TWCR
-	andi r16, 1 << TWINT
-	brne 2b
+	sbrs r16, TWINT
+	rjmp 2b
 	; WRITE byte:
 	sts TWDR, r22
+	ldi r16, (1 << TWINT) | (1 << TWEN)
+	sts TWCR, r16
 3:	; Block forever until done.
 	lds r16, TWCR
-	andi r16, 1 << TWINT
-	brne 3b
+	sbrs r16, TWINT
+	rjmp 3b
 	; STOP condition:
 	ldi r16, (1 << TWINT) | (1 << TWSTO) | (1 << TWEN)
+	sts TWCR, r16
 	; No wait after STOP.
 	ret
 	.size i2c_putc, . - i2c_putc
