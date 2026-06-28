@@ -49,7 +49,7 @@ i2c_putc:
 	lds r16, TWCR
 	sbrs r16, TWINT
 	rjmp 1b
-	; WRITE address:
+	; WRITE to the address:
 	lsl r24
 	sts TWDR, r24
 	ldi r16, (1 << TWINT) | (1 << TWEN)
@@ -71,4 +71,36 @@ i2c_putc:
 	sts TWCR, r16
 	; No wait after STOP.
 	ret
-	.size i2c_putc, . - i2c_putc
+.size i2c_putc, . - i2c_putc
+
+; Blocking read call without error hadnling.
+	.global i2c_getc
+	.type i2c_getc, @function
+; unsigned char i2c_getc(unsigned char addr)
+i2c_getc:
+	; START condition:
+	ldi r16, (1 << TWINT) | (1 << TWSTA) | (1 << TWEN)
+	sts TWCR, r16
+1:	; Block until START is asserted by the hardware.
+	lds r16, TWCR
+	sbrs r16, TWINT
+	rjmp 1b
+	; READ from the address:
+	lsr r24
+	; Set the read bit in the address frame.
+	ori r24, 0x1
+	sts TWDR, r24
+	; This triggers the transaction.
+	ldi r16, (1 << TWINT) | (1 << TWEN)
+	sts TWCR, r16
+2:	; Block until done with the address frame.
+	lds r16, TWCR
+	sbrs r16, TWINT
+	rjmp 2b
+	; Now, we should have data
+	lds r24, TWDR
+	; STOP condition, no wait:
+	ldi r16, (1 << TWINT) | (1 << TWSTO) | (1 << TWEN)
+	sts TWCR, r16
+	ret
+	.size i2c_getc, . - i2c_getc
