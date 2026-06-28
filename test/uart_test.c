@@ -7,7 +7,7 @@
 
 int main(void)
 {
-  uart_init();
+  initUART();
 
   while(1) {
     printf("Henlow planet %f \n", 1.0f);
